@@ -1,6 +1,6 @@
 [package]
 name = "lug"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["JKSoper"]
 edition = "2024"
 description = "A tool to make pushing to git easier."

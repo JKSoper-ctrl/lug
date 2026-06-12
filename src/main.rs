@@ -54,15 +54,25 @@ fn build_and_publish() {
         std::process::exit(1);
     });
 
-    // Git is already initialised by cargo new by default, but ensure it's there
-    if !std::path::Path::new(".git").exists() {
-        Command::new("git").args(&["init"]).status().unwrap();
+    // Stage all files and create the initial commit
+    let add_status = Command::new("git").args(&["add", "."]).status().unwrap();
+    if !add_status.success() {
+        eprintln!("Error: git add . failed");
+        std::process::exit(1);
+    }
+    let commit_status = Command::new("git")
+        .args(&["commit", "-m", "chore: initial commit"])
+        .status()
+        .unwrap();
+    if !commit_status.success() {
+        eprintln!("Error: git commit failed – no files to commit?");
+        std::process::exit(1);
     }
 
-    // Create GitHub repository via gh
+    // Create GitHub repository (without --push, just to add the remote)
     let visibility = if public { "--public" } else { "--private" };
     let gh_create_status = Command::new("gh")
-        .args(&["repo", "create", &name, visibility, "--source=.", "--remote=origin", "--push"])
+        .args(&["repo", "create", &name, visibility, "--source=.", "--remote=origin"])
         .status()
         .expect("Failed to run gh repo create");
     if !gh_create_status.success() {
@@ -70,20 +80,11 @@ fn build_and_publish() {
         std::process::exit(1);
     }
 
-    // The initial commit (cargo new might have created a commit already, but we force a known message)
-    // We'll add all and commit with "chore: initial commit"
-    let add_status = Command::new("git").args(&["add", "."]).status().unwrap();
-    if !add_status.success() {
-        eprintln!("Warning: git add . failed");
-    }
-    let commit_status = Command::new("git")
-        .args(&["commit", "-m", "chore: initial commit"])
+    // Push the existing commit
+    let push_status = Command::new("git")
+        .args(&["push", "-u", "origin", "HEAD"])
         .status()
         .unwrap();
-    if !commit_status.success() {
-        eprintln!("Warning: git commit failed – maybe nothing to commit?");
-    }
-    let push_status = Command::new("git").args(&["push", "-u", "origin", "HEAD"]).status().unwrap();
     if push_status.success() {
         println!("✅ Project '{}' successfully published to GitHub as {}.", name, visibility);
     } else {
