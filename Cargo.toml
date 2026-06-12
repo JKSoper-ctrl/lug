@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["JKSoper"]
 edition = "2024"
 description = "A tool to make pushing to git easier."
-licence = "MIT"
+license = "MIT"
 
 [dependencies]
 
