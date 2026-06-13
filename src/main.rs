@@ -14,24 +14,24 @@ use std::process::Command;
 
 fn main() {
     println!("---");
-    println!("Running lug - please select an option and press enter to confirm :)");
+    println!("You're running lug! Pick an option below and press enter to confirm :)");
     println!("[1] Build and publish a new Rust project to GitHub");
     println!("[2] Push changes with Conventional Commits");
-    println!("[0] Check dependancies");
+    println!("[0] Check dependencies");
 
     let mut action_selection = String::new();
     io::stdin().read_line(&mut action_selection).unwrap();
 
     if action_selection.trim() == "1" { //creating new project
         println!("---");
-        println!("Creating new project - type project name and press enter to confirm");
+        println!("You're creating a new project! Type its name and press enter to confirm :)");
 
         let mut project_name = String::new();
         io::stdin().read_line(&mut project_name).unwrap();
         let short_project_path = "./".to_owned() + &project_name.trim();
 
         println!("---");
-        println!("Will this project be public or private? - type number and press enter to conifrm");
+        println!("Should this project be public or private? Pick a number and press enter to confirm :)");
         println!("[1] Public");
         println!("[0] Private");
         
@@ -44,20 +44,20 @@ fn main() {
         } else if project_visability.trim() == "0" { //private
             project_visability_arg = "--private";
         } else {
-            eprintln!("Incorrect input!");
+            eprintln!("Oops, that's not a valid option! :(");
         }
         
         println!("---");
-        println!("Do you have a decription for this project? If so write below and press enter to continue (can leave blank)");
+        println!("Got a description for this project? Pop it below (or leave it blank) and press enter :)");
 
         let mut project_description = String::new();
         io::stdin().read_line(&mut project_description).unwrap();
 
         println!("---");
-        println!("Are you happy to create and publish the following project? Enter you answer and press enter to confirm");
+        println!("Ready to create and publish this project? Confirm below :)");
         println!();
         println!("Project name: {}", project_name.trim());
-        println!("Repo visability: {}", project_visability_arg);
+        println!("Repository visability: {}", project_visability_arg);
         println!("Project description: {}", project_description.trim());
         println!();
         println!("[1] Yes");
@@ -75,7 +75,7 @@ fn main() {
                 .status()
                 .expect("Error using `cargo new` to create new Rust project in local files");
             
-            println!("Created Cargo project!");
+            println!("Cargo project created! :)");
 
             //adding git
             Command::new("git")
@@ -84,7 +84,7 @@ fn main() {
                 .status()
                 .expect("Error adding git");
 
-            println!("Added folder to Git!");
+            println!("Files added to Git! :)");
 
             //creating first git commit
             Command::new("git")
@@ -93,7 +93,7 @@ fn main() {
                 .status()
                 .expect("Failed to create first commit");
 
-            println!("Created first commit!");
+            println!("First commit made! :)");
 
             //pushing to GitHub
             Command::new("gh")
@@ -102,9 +102,9 @@ fn main() {
                 .status()
                 .expect("Error creating new repo");
 
-            println!("Published onto GitHub!");
+            println!("All done - your project is live on GitHub!");
         } else {
-            println!("Creation cancelled");
+            println!("No worries, creation cancelled :)");
         }
 
 
@@ -116,7 +116,7 @@ fn main() {
             .expect("Error adding git");
         
         println!("---");
-        println!("Changes that would be made:");
+        println!("Here's a peek at what's changed:");
         println!();
 
         Command::new("git")
@@ -165,7 +165,7 @@ fn main() {
         }
 
         println!("---");
-        println!("Write a description:");
+        println!("Now, write a short description for this change and press enter :)");
         
         let mut change_description = String::new();
         io::stdin().read_line(&mut change_description).unwrap();
@@ -173,7 +173,7 @@ fn main() {
         let commit_message = change_type + &change_description.trim();
 
         println!("---");
-        println!("Are you fine to push the following change?");
+        println!("Ready to push this change? Confirm below :)");
         println!();
         println!("{}", commit_message.trim());
         let output = Command::new("git")
@@ -211,19 +211,19 @@ fn main() {
 
     } else if action_selection.trim() == "0" { //checking dependancies
         println!("---");
-        println!("Checking Cargo:");
+        println!("Checking for Cargo :)");
         Command::new("cargo").arg("--version").status().expect("Failed to find Cargo");
         println!();
-        println!("Checking Git:");
+        println!("Checking for Git :)");
         Command::new("git").arg("--version").status().expect("Failed to find Git");
         println!();
-        println!("Checking GitHub:");
+        println!("Checking for the GitHub CLI :)");
         Command::new("gh").arg("--version").status().expect("Failed to find GitHub");
         println!();
-        println!("All dependancies installed!")
+        println!("All dependencies are installed!")
 
     } else {
-        eprintln!("Incorrect input!");
+        eprintln!("Oops, that's not a valid option! :(");
     }
     println!("---");
 
