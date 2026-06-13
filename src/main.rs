@@ -120,7 +120,7 @@ fn main() {
         println!();
 
         Command::new("git")
-            .args(&["diff", "HEAD"])
+            .args(&["--no-pager", "diff", "HEAD"])
             .status()
             .expect("couldn't see git changes");
 
