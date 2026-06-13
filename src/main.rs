@@ -205,6 +205,9 @@ fn main() {
                 .args(&["push", "origin", "HEAD"])
                 .status()
                 .expect("failed to push to GitHub");
+
+            println!();
+            println!("Pushed to GitHub!");
         }
 
     } else if action_selection.trim() == "0" { //checking dependancies
