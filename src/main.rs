@@ -188,9 +188,8 @@ fn main() {
         let mut happy_to_confirm = String::new();
         io::stdin().read_line(&mut happy_to_confirm).unwrap();
 
-        println!("---");
-
         if happy_to_confirm.trim() == "1" {
+            println!("---");
             Command::new("git")
                 .args(&["add","."])
                 .status()
