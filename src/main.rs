@@ -1,196 +1,228 @@
-use std::io::{self, Write};
+//To Do:
+//- Automatically create README.md file on project creation
+//- Allow a custom starting verison (leave blank to remain 0.1.0)
+//- Version control using Semantic Versioning 2.0.0
+//- Allow whole chain to be entered in one
+//- Add description when gh repo being created
+//- Add file address to the summary before confirming a new project
+//- Verify if GitHub logged in
+//- Check correct gh and git versions
+//- Add handling for incorrect values
+
+use std::io;
 use std::process::Command;
 
 fn main() {
-    if !check_command("git", &["--version"]) {
-        eprintln!("Error: git is not installed or not in PATH.");
-        std::process::exit(1);
-    }
-    if !check_command("gh", &["--version"]) {
-        eprintln!("Error: gh (GitHub CLI) is not installed or not in PATH.");
-        eprintln!("Please install it from https://cli.github.com/ and run 'gh auth login'.");
-        std::process::exit(1);
-    }
+    println!("---");
+    println!("Running lug - please select an option and press enter to confirm :)");
+    println!("[1] Build and publish a new Rust project to GitHub");
+    println!("[2] Push changes with Conventional Commits");
+    println!("[0] Check dependancies");
 
-    println!("Select an option:");
-    println!("1) Build and publish a new Rust project to GitHub");
-    println!("2) Push changes with Conventional Commits");
-    print!("Enter 1 or 2: ");
-    io::stdout().flush().unwrap();
-    let mut choice = String::new();
-    io::stdin().read_line(&mut choice).unwrap();
-    match choice.trim() {
-        "1" => build_and_publish(),
-        "2" => push_conventional_commits(),
-        _ => {
-            eprintln!("Invalid choice.");
-            std::process::exit(1);
-        }
-    }
-}
+    let mut action_selection = String::new();
+    io::stdin().read_line(&mut action_selection).unwrap();
 
-fn check_command(cmd: &str, args: &[&str]) -> bool {
-    Command::new(cmd).args(args).output().is_ok()
-}
+    if action_selection.trim() == "1" { //creating new project
+        println!("---");
+        println!("Creating new project - type project name and press enter to confirm");
 
-fn build_and_publish() {
-    println!("\n--- Build and publish new Rust project ---");
-    let name = prompt_non_empty("Project name: ");
-    let public = prompt_public_private();
+        let mut project_name = String::new();
+        io::stdin().read_line(&mut project_name).unwrap();
+        let short_project_path = "./".to_owned() + &project_name.trim();
 
-    println!("Creating new Rust binary project '{}'...", name);
-    let status = Command::new("cargo")
-        .args(&["new", "--bin", &name])
-        .status()
-        .expect("Failed to run cargo new");
-    if !status.success() {
-        eprintln!("Error: cargo new failed.");
-        std::process::exit(1);
-    }
+        println!("---");
+        println!("Will this project be public or private? - type number and press enter to conifrm");
+        println!("[1] Public");
+        println!("[0] Private");
+        
+        let mut project_visability = String::new();
+        io::stdin().read_line(&mut project_visability).unwrap();
+        let mut project_visability_arg = "";
 
-    // Change working directory to the new project
-    std::env::set_current_dir(&name).unwrap_or_else(|_| {
-        eprintln!("Failed to enter project directory '{}'", name);
-        std::process::exit(1);
-    });
-
-    // Stage all files and create the initial commit
-    let add_status = Command::new("git").args(&["add", "."]).status().unwrap();
-    if !add_status.success() {
-        eprintln!("Error: git add . failed");
-        std::process::exit(1);
-    }
-    let commit_status = Command::new("git")
-        .args(&["commit", "-m", "chore: initial commit"])
-        .status()
-        .unwrap();
-    if !commit_status.success() {
-        eprintln!("Error: git commit failed – no files to commit?");
-        std::process::exit(1);
-    }
-
-    // Create GitHub repository (without --push, just to add the remote)
-    let visibility = if public { "--public" } else { "--private" };
-    let gh_create_status = Command::new("gh")
-        .args(&["repo", "create", &name, visibility, "--source=.", "--remote=origin"])
-        .status()
-        .expect("Failed to run gh repo create");
-    if !gh_create_status.success() {
-        eprintln!("Error: gh repo create failed. Are you logged in? (gh auth status)");
-        std::process::exit(1);
-    }
-
-    // Push the existing commit
-    let push_status = Command::new("git")
-        .args(&["push", "-u", "origin", "HEAD"])
-        .status()
-        .unwrap();
-    if push_status.success() {
-        println!("✅ Project '{}' successfully published to GitHub as {}.", name, visibility);
-    } else {
-        eprintln!("Error: git push failed. You may need to push manually.");
-        std::process::exit(1);
-    }
-}
-
-fn push_conventional_commits() {
-    println!("\n--- Push changes with Conventional Commits ---");
-    println!("Types:\n  feat, fix, refactor, perf, style, test, docs, build, ops, chore");
-    let commit_type = prompt_non_empty("Commit type: ");
-    let scope = prompt_optional("Optional scope (leave blank to omit): ");
-    let description = prompt_non_empty("Short description (required): ");
-    let body = prompt_optional("Optional body (blank line to finish):\n");
-    let footer = prompt_optional("Optional footer (blank line to finish):\n");
-
-    let mut message = String::new();
-    message.push_str(&commit_type);
-    if !scope.is_empty() {
-        message.push('(');
-        message.push_str(&scope);
-        message.push(')');
-    }
-    message.push_str(": ");
-    message.push_str(&description);
-
-    if !body.is_empty() {
-        message.push_str("\n\n");
-        message.push_str(&body);
-    }
-    if !footer.is_empty() {
-        if body.is_empty() {
-            message.push_str("\n\n");
+        if project_visability.trim() == "1" { //public
+            project_visability_arg = "--public";
+        } else if project_visability.trim() == "0" { //private
+            project_visability_arg = "--private";
         } else {
-            message.push('\n');
+            eprintln!("Incorrect input!");
         }
-        message.push_str(&footer);
-    }
+        
+        println!("---");
+        println!("Do you have a decription for this project? If so write below and press enter to continue (can leave blank)");
 
-    println!("\nPrepared commit message:\n---\n{}\n---", message);
+        let mut project_description = String::new();
+        io::stdin().read_line(&mut project_description).unwrap();
 
-    // Stage all changes (you can modify to add specific files)
-    let add_status = Command::new("git").args(&["add", "-A"]).status().unwrap();
-    if !add_status.success() {
-        eprintln!("Error: git add -A failed.");
-        std::process::exit(1);
-    }
+        println!("---");
+        println!("Are you happy to create and publish the following project? Enter you answer and press enter to confirm");
+        println!();
+        println!("Project name: {}", project_name.trim());
+        println!("Repo visability: {}", project_visability_arg);
+        println!("Project description: {}", project_description.trim());
+        println!();
+        println!("[1] Yes");
+        println!("[0] No");
 
-    let commit_status = Command::new("git")
-        .args(&["commit", "-m", &message])
-        .status()
-        .unwrap();
-    if !commit_status.success() {
-        eprintln!("Error: git commit failed.");
-        std::process::exit(1);
-    }
+        let mut happy_to_confirm = String::new();
+        io::stdin().read_line(&mut happy_to_confirm).unwrap();
 
-    let push_status = Command::new("git").args(&["push"]).status().unwrap();
-    if push_status.success() {
-        println!("✅ Changes pushed successfully.");
+        println!("---");
+
+        if happy_to_confirm.trim() == "1" { //happy to confirm
+            //creating new cargo project
+            Command::new("cargo")
+                .args(&["new", project_name.trim()])
+                .status()
+                .expect("Error using `cargo new` to create new Rust project in local files");
+            
+            println!("Created Cargo project!");
+
+            //adding git
+            Command::new("git")
+                .args(&["add", "."])
+                .current_dir(&short_project_path)
+                .status()
+                .expect("Error adding git");
+
+            println!("Added folder to Git!");
+
+            //creating first git commit
+            Command::new("git")
+                .args(&["commit", "-m", "chore: initial commit"])
+                .current_dir(&short_project_path)
+                .status()
+                .expect("Failed to create first commit");
+
+            println!("Created first commit!");
+
+            //pushing to GitHub
+            Command::new("gh")
+                .args(&["repo", "create", project_name.trim(), project_visability_arg, "--source=.", "--remote=origin", "--push"])
+                .current_dir(&short_project_path)
+                .status()
+                .expect("Error creating new repo");
+
+            println!("Published onto GitHub!");
+        } else {
+            println!("Creation cancelled");
+        }
+
+
+    } else if action_selection.trim() == "2" { //pushing changes to git
+        //adding git
+        Command::new("git")
+            .args(&["add", "."])
+            .status()
+            .expect("Error adding git");
+        
+        println!("---");
+        println!("Changes that would be made:");
+        println!();
+
+        Command::new("git")
+            .args(&["diff", "HEAD"])
+            .status()
+            .expect("couldn't see git changes");
+
+        println!();
+        println!("---");
+        println!("What type of change is it?");
+        println!("[1] feat - Commits that add, adjust or remove a feature");
+        println!("[2] fix - Commits that fix an API or UI bug");
+        println!("[3] refactor - Rewrite/restructure code without altering behavior");
+        println!("[4] perf - Performance improvement (special refactor)");
+        println!("[5] style - Code style changes (formatting, semicolons, etc.)");
+        println!("[6] test - Add or correct tests");
+        println!("[7] docs - Documentation only");
+        println!("[8] build - Build tools, dependencies, project version");
+        println!("[9] ops - Infrastructure, CI/CD, deployment, monitoring");
+        println!("[0] chore - Initial commit, .gitignore, etc.");
+
+        let mut change_selection = String::new();
+        io::stdin().read_line(&mut change_selection).unwrap();
+
+        let mut change_type = String::new();
+        if change_selection.trim() == "1" {
+            change_type = "feat: ".to_string()
+        } else if change_selection.trim() == "2" {
+            change_type = "fix: ".to_string()
+        } else if change_selection.trim() == "3" {
+            change_type = "refactor: ".to_string()
+        } else if change_selection.trim() == "4" {
+            change_type = "perf: ".to_string()
+        } else if change_selection.trim() == "5" {
+            change_type = "style: ".to_string()
+        } else if change_selection.trim() == "6" {
+            change_type = "test: ".to_string()
+        } else if change_selection.trim() == "7" {
+            change_type = "docs: ".to_string()
+        } else if change_selection.trim() == "8" {
+            change_type = "build: ".to_string()
+        } else if change_selection.trim() == "9" {
+            change_type = "ops: ".to_string()
+        } else { //if change_selection == 0
+            change_type = "chore: ".to_string()
+        }
+
+        println!("---");
+        println!("Write a description:");
+        
+        let mut change_description = String::new();
+        io::stdin().read_line(&mut change_description).unwrap();
+
+        let commit_message = change_type + &change_description.trim();
+
+        println!("---");
+        println!("Are you fine to push the following change?");
+        println!();
+        println!("{}", commit_message.trim());
+        let output = Command::new("git")
+            .args(&["diff", "--shortstat", "HEAD"])
+            .output()
+            .expect("failed to summarise the git changes");
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+        println!();
+        println!("[1] Yes");
+        println!("[0] No");
+
+        let mut happy_to_confirm = String::new();
+        io::stdin().read_line(&mut happy_to_confirm).unwrap();
+
+        println!("---");
+
+        if happy_to_confirm.trim() == "1" {
+            Command::new("git")
+                .args(&["add","."])
+                .status()
+                .expect("failed to add to git");
+
+            Command::new("git")
+                .args(&["commit", "-m", commit_message.trim()])
+                .status()
+                .expect("failed to add to git");
+
+            Command::new("git")
+                .args(&["push", "origin", "HEAD"])
+                .status()
+                .expect("failed to push to GitHub");
+        }
+
+    } else if action_selection.trim() == "0" { //checking dependancies
+        println!("---");
+        println!("Checking Cargo:");
+        Command::new("cargo").arg("--version").status().expect("Failed to find Cargo");
+        println!();
+        println!("Checking Git:");
+        Command::new("git").arg("--version").status().expect("Failed to find Git");
+        println!();
+        println!("Checking GitHub:");
+        Command::new("gh").arg("--version").status().expect("Failed to find GitHub");
+        println!();
+        println!("All dependancies installed!")
+
     } else {
-        eprintln!("Error: git push failed.");
-        std::process::exit(1);
+        eprintln!("Incorrect input!");
     }
-}
+    println!("---");
 
-fn prompt_non_empty(prompt: &str) -> String {
-    loop {
-        print!("{}", prompt);
-        io::stdout().flush().unwrap();
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let trimmed = input.trim();
-        if !trimmed.is_empty() {
-            return trimmed.to_string();
-        }
-        println!("This field cannot be empty.");
-    }
-}
-
-fn prompt_optional(prompt: &str) -> String {
-    print!("{}", prompt);
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    let trimmed = input.trim();
-    if trimmed.is_empty() {
-        String::new()
-    } else {
-        // For multiline body/footer we only read one line; a real implementation could read until blank line.
-        // This simplified version accepts a single line.
-        trimmed.to_string()
-    }
-}
-
-fn prompt_public_private() -> bool {
-    loop {
-        print!("Public or private? (publ/priv): ");
-        io::stdout().flush().unwrap();
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        match input.trim().to_lowercase().as_str() {
-            "publ" | "public" | "y" | "yes" => return true,
-            "priv" | "private" | "n" | "no" => return false,
-            _ => println!("Please answer 'public' or 'private'."),
-        }
-    }
 }
